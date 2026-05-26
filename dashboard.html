@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Interactive OJT Progress Tracker</title>
+
+  <link rel="stylesheet" href="dashboard.css">
+
+  <link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+  <!-- Sidebar -->
+
+  <div class="sidebar">
+
+    <h2>OJT Tracker</h2>
+
+    <ul>
+
+      <li class="active" id="navDashboard" onclick="showSection('dashboard')">
+        <i class="fa-solid fa-house"></i>
+        Dashboard
+      </li>
+
+      <li id="navTasks" onclick="showSection('tasks')">
+        <i class="fa-solid fa-list-check"></i>
+        Tasks
+      </li>
+
+      <li id="navProgress" onclick="showSection('progress')">
+        <i class="fa-solid fa-chart-line"></i>
+        Progress
+      </li>
+
+      <li id="navNotes" onclick="showSection('notes')">
+        <i class="fa-solid fa-note-sticky"></i>
+        Notes
+      </li>
+
+    </ul>
+
+  </div>
+
+  <!-- Main Content -->
+
+  <div class="main-content">
+
+    <!-- Topbar -->
+
+    <div class="topbar">
+
+      <h1 id="pageTitle">Interactive Progress Tracker</h1>
+
+    </div>
+
+    <section id="dashboardSection" class="content-section active-section">
+
+      <div class="cards">
+
+        <div class="card blue">
+          <h2 id="totalTasks">0</h2>
+          <p>Total Tasks</p>
+        </div>
+
+        <div class="card green">
+          <h2 id="completedTasks">0</h2>
+          <p>Completed</p>
+        </div>
+
+        <div class="card orange">
+          <h2 id="pendingTasks">0</h2>
+          <p>Pending</p>
+        </div>
+
+        <div class="card purple">
+          <h2 id="progressPercent">0%</h2>
+          <p>Progress</p>
+        </div>
+
+      </div>
+
+      <div class="task-table">
+
+        <div class="table-header">
+
+          <h2>Recent Tasks</h2>
+
+          <span class="subtext">Last 5 tasks shown here</span>
+
+        </div>
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Task</th>
+
+              <th>Category</th>
+
+              <th>Status</th>
+
+              <th>Date</th>
+
+              <th>Actions</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="dashboardTaskList">
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <section id="tasksSection" class="content-section">
+
+      <div class="task-form">
+
+        <h2>Add New Task</h2>
+
+        <div class="form-grid">
+
+          <input type="text" id="taskName" placeholder="Task Name">
+
+          <input type="text" id="taskCategory" placeholder="Category">
+
+          <input type="date" id="taskDate">
+
+          <select id="taskStatus">
+
+            <option value="Pending">Pending</option>
+
+            <option value="In Progress">In Progress</option>
+
+            <option value="Completed">Completed</option>
+
+          </select>
+
+        </div>
+
+        <textarea id="taskNotes" placeholder="Task Notes / Mentor Feedback"></textarea>
+
+        <button onclick="addTask()">Add Task</button>
+
+      </div>
+
+      <div class="search-box">
+
+        <input type="text" id="searchInput" placeholder="Search Tasks..." onkeyup="searchTasks()">
+
+      </div>
+
+      <div class="task-table">
+
+        <div class="table-header">
+
+          <h2>Task List</h2>
+
+          <select id="filterStatus" onchange="filterTasks()">
+
+            <option value="All">All</option>
+
+            <option value="Pending">Pending</option>
+
+            <option value="In Progress">In Progress</option>
+
+            <option value="Completed">Completed</option>
+
+          </select>
+
+        </div>
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Task</th>
+
+              <th>Category</th>
+
+              <th>Status</th>
+
+              <th>Date</th>
+
+              <th>Actions</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="taskList">
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <section id="progressSection" class="content-section">
+
+      <div class="cards">
+
+        <div class="card blue">
+          <h2 id="progressTotalTasks">0</h2>
+          <p>Total Tasks</p>
+        </div>
+
+        <div class="card green">
+          <h2 id="progressCompletedTasks">0</h2>
+          <p>Completed</p>
+        </div>
+
+        <div class="card orange">
+          <h2 id="progressPendingTasks">0</h2>
+          <p>Pending</p>
+        </div>
+
+        <div class="card purple">
+          <h2 id="progressInProgressTasks">0</h2>
+          <p>In Progress</p>
+        </div>
+
+      </div>
+
+      <div class="progress-charts">
+
+        <div class="progress-card">
+          <h3>Completed</h3>
+          <div class="progress-bar">
+            <div class="progress-fill completed" id="completedProgressFill"></div>
+          </div>
+          <span id="completedProgressPercent">0%</span>
+        </div>
+
+        <div class="progress-card">
+          <h3>In Progress</h3>
+          <div class="progress-bar">
+            <div class="progress-fill in-progress" id="inProgressFill"></div>
+          </div>
+          <span id="inProgressPercent">0%</span>
+        </div>
+
+        <div class="progress-card">
+          <h3>Pending</h3>
+          <div class="progress-bar">
+            <div class="progress-fill pending" id="pendingProgressFill"></div>
+          </div>
+          <span id="pendingProgressPercent">0%</span>
+        </div>
+
+      </div>
+
+    </section>
+
+    <section id="notesSection" class="content-section">
+
+      <div class="task-form">
+
+        <h2>Notes</h2>
+
+        <div class="form-grid">
+
+          <input type="text" id="noteTitle" placeholder="Note Title">
+
+        </div>
+
+        <textarea id="noteBody" placeholder="Write your note..."></textarea>
+
+        <button onclick="addNote()">Add Note</button>
+
+      </div>
+
+      <div class="task-table">
+
+        <div class="table-header">
+
+          <h2>Saved Notes</h2>
+
+        </div>
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Title</th>
+
+              <th>Note</th>
+
+              <th>Actions</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="noteList">
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </div>
+
+  <script src="dashboard.js"></script>
+
+</body>
+
+</html>
