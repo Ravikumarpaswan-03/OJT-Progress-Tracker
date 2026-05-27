@@ -1,6 +1,15 @@
+const $ = id => document.getElementById(id);
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let notes = JSON.parse(localStorage.getItem("notes")) || [];
 let editId = null;
+const titles = {
+  dashboard: "Interactive Progress Tracker",
+  tasks: "Tasks",
+  progress: "Progress Overview",
+  notes: "Notes"
+};
+
+const getNextTaskId = () => tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
 
 showSection("dashboard");
 displayTasks();
@@ -8,54 +17,50 @@ displayNotes();
 updateProgressSection();
 
 function showSection(section) {
-  const sections = ["dashboard", "tasks", "progress", "notes"];
-  sections.forEach(name => {
-    const el = document.getElementById(`${name}Section`);
-    if(el) {
-      el.classList.toggle("active-section", name === section);
-    }
-
-    const navItem = document.getElementById(`nav${name.charAt(0).toUpperCase() + name.slice(1)}`);
-    if(navItem) {
-      navItem.classList.toggle("active", name === section);
-    }
+  ["dashboard", "tasks", "progress", "notes"].forEach(name => {
+    const el = $(name + "Section");
+    const nav = $("nav" + name[0].toUpperCase() + name.slice(1));
+    if(el) el.classList.toggle("active-section", name === section);
+    if(nav) nav.classList.toggle("active", name === section);
   });
 
-  const titles = {
-    dashboard: "Interactive Progress Tracker",
-    tasks: "Tasks",
-    progress: "Progress Overview",
-    notes: "Notes"
-  };
-
-  document.getElementById("pageTitle").innerText = titles[section] || "OJT Tracker";
-
-  if(section === "progress") {
-    updateProgressSection();
-  }
-
-  if(section === "dashboard") {
-    displayDashboardTasks();
-  }
+  $("pageTitle").innerText = titles[section] || "OJT Tracker";
+  if(section === "progress") updateProgressSection();
+  if(section === "dashboard") displayDashboardTasks();
+  if(section === "tasks" && !editId) $("taskId").value = getNextTaskId();
 }
 
 function addTask() {
+  const taskIdInput = document.getElementById("taskId").value.trim();
+  const taskId = parseInt(taskIdInput, 10);
   const taskName = document.getElementById("taskName").value.trim();
   const taskCategory = document.getElementById("taskCategory").value.trim();
   const taskDate = document.getElementById("taskDate").value;
   const taskStatus = document.getElementById("taskStatus").value;
   const taskNotes = document.getElementById("taskNotes").value.trim();
 
+  if(!taskIdInput || isNaN(taskId) || taskId < 1) {
+    alert("Please enter a valid Task ID.");
+    return;
+  }
+
   if(taskName === "" || taskCategory === "" || taskDate === "") {
     alert("Please fill all required fields.");
     return;
   }
 
+  const duplicateTask = tasks.find(task => task.id === taskId);
+
   if(editId) {
+    if(duplicateTask && duplicateTask.id !== editId) {
+      alert("Task ID already exists. Please use a unique Task ID.");
+      return;
+    }
+
     tasks = tasks.map(task => {
       if(task.id === editId) {
         return {
-          ...task,
+          id: taskId,
           taskName,
           taskCategory,
           taskDate,
@@ -67,8 +72,13 @@ function addTask() {
     });
     editId = null;
   } else {
+    if(duplicateTask) {
+      alert("Task ID already exists. Please use a unique Task ID.");
+      return;
+    }
+
     tasks.push({
-      id: Date.now(),
+      id: taskId,
       taskName,
       taskCategory,
       taskDate,
@@ -83,38 +93,29 @@ function addTask() {
 }
 
 function renderTasks(tableBodyId, filteredTasks = []) {
-  const taskList = document.getElementById(tableBodyId);
-  taskList.innerHTML = "";
-
-  if(filteredTasks.length === 0) {
-    taskList.innerHTML = `<tr><td colspan="5">No tasks found.</td></tr>`;
-    return;
-  }
-
-  [...filteredTasks].reverse().forEach(task => {
-    let statusClass = "progress";
-    if(task.taskStatus === "Completed") {
-      statusClass = "completed";
-    } else if(task.taskStatus === "Pending") {
-      statusClass = "pending";
-    }
-
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${task.taskName}</td>
-      <td>${task.taskCategory}</td>
-      <td>
-        <span class="status ${statusClass}">${task.taskStatus}</span>
-      </td>
-      <td>${task.taskDate}</td>
-      <td class="actions">
-        <button class="complete-btn" onclick="markComplete(${task.id})">Complete</button>
-        <button class="edit-btn" onclick="editTask(${task.id})">Edit</button>
-        <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
-      </td>
-    `;
-    taskList.appendChild(row);
-  });
+  const taskList = $(tableBodyId);
+  taskList.innerHTML = filteredTasks.length === 0
+    ? `<tr><td colspan="5">No tasks found.</td></tr>`
+    : [...filteredTasks].reverse().map(task => {
+      const statusClass = task.taskStatus === "Completed"
+        ? "completed"
+        : task.taskStatus === "Pending"
+          ? "pending"
+          : "progress";
+      return `
+        <tr>
+          <td><strong>#${task.id}</strong></td>
+          <td>${task.taskName}</td>
+          <td>${task.taskCategory}</td>
+          <td><span class="status ${statusClass}">${task.taskStatus}</span></td>
+          <td>${task.taskDate}</td>
+          <td class="actions">
+            <button class="complete-btn" onclick="markComplete(${task.id})">Complete</button>
+            <button class="edit-btn" onclick="editTask(${task.id})">Edit</button>
+            <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
+          </td>
+        </tr>`;
+    }).join("");
 }
 
 function displayTasks(filteredTasks = tasks) {
@@ -131,40 +132,34 @@ function displayDashboardTasks() {
 
 function updateSummary() {
   const total = tasks.length;
-  const completed = tasks.filter(task => task.taskStatus === "Completed").length;
-  const pending = tasks.filter(task => task.taskStatus === "Pending").length;
-  const inProgress = tasks.filter(task => task.taskStatus === "In Progress").length;
-
-  const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-  document.getElementById("totalTasks").innerText = total;
-  document.getElementById("completedTasks").innerText = completed;
-  document.getElementById("pendingTasks").innerText = pending;
-  document.getElementById("progressPercent").innerText = progress + "%";
-
-  document.getElementById("progressTotalTasks").innerText = total;
-  document.getElementById("progressCompletedTasks").innerText = completed;
-  document.getElementById("progressPendingTasks").innerText = pending;
-  document.getElementById("progressInProgressTasks").innerText = inProgress;
+  const counts = tasks.reduce((acc, { taskStatus }) => {
+    acc[taskStatus === "Completed" ? "completed" : taskStatus === "Pending" ? "pending" : "inProgress"]++;
+    return acc;
+  }, { completed: 0, pending: 0, inProgress: 0 });
+  const progress = total ? Math.round((counts.completed / total) * 100) : 0;
+  $("totalTasks").innerText = total;
+  $("completedTasks").innerText = counts.completed;
+  $("pendingTasks").innerText = counts.pending;
+  $("progressPercent").innerText = progress + "%";
+  $("progressTotalTasks").innerText = total;
+  $("progressCompletedTasks").innerText = counts.completed;
+  $("progressPendingTasks").innerText = counts.pending;
+  $("progressInProgressTasks").innerText = counts.inProgress;
 }
 
 function updateProgressSection() {
   const total = tasks.length;
-  const completed = tasks.filter(task => task.taskStatus === "Completed").length;
-  const inProgress = tasks.filter(task => task.taskStatus === "In Progress").length;
-  const pending = tasks.filter(task => task.taskStatus === "Pending").length;
-
-  const completedPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const inProgressPercent = total > 0 ? Math.round((inProgress / total) * 100) : 0;
-  const pendingPercent = total > 0 ? Math.round((pending / total) * 100) : 0;
-
-  document.getElementById("completedProgressFill").style.width = `${completedPercent}%`;
-  document.getElementById("inProgressFill").style.width = `${inProgressPercent}%`;
-  document.getElementById("pendingProgressFill").style.width = `${pendingPercent}%`;
-
-  document.getElementById("completedProgressPercent").innerText = `${completedPercent}%`;
-  document.getElementById("inProgressPercent").innerText = `${inProgressPercent}%`;
-  document.getElementById("pendingProgressPercent").innerText = `${pendingPercent}%`;
+  const counts = tasks.reduce((acc, { taskStatus }) => {
+    acc[taskStatus === "Completed" ? "completed" : taskStatus === "Pending" ? "pending" : "inProgress"]++;
+    return acc;
+  }, { completed: 0, pending: 0, inProgress: 0 });
+  const pct = x => total ? Math.round((x / total) * 100) : 0;
+  $("completedProgressFill").style.width = `${pct(counts.completed)}%`;
+  $("inProgressFill").style.width = `${pct(counts.inProgress)}%`;
+  $("pendingProgressFill").style.width = `${pct(counts.pending)}%`;
+  $("completedProgressPercent").innerText = `${pct(counts.completed)}%`;
+  $("inProgressPercent").innerText = `${pct(counts.inProgress)}%`;
+  $("pendingProgressPercent").innerText = `${pct(counts.pending)}%`;
 }
 
 function saveTasks() {
@@ -192,6 +187,7 @@ function editTask(id) {
   const task = tasks.find(task => task.id === id);
   if(!task) return;
 
+  document.getElementById("taskId").value = task.id;
   document.getElementById("taskName").value = task.taskName;
   document.getElementById("taskCategory").value = task.taskCategory;
   document.getElementById("taskDate").value = task.taskDate;
@@ -224,6 +220,7 @@ function filterTasks() {
 }
 
 function clearForm() {
+  document.getElementById("taskId").value = getNextTaskId();
   document.getElementById("taskName").value = "";
   document.getElementById("taskCategory").value = "";
   document.getElementById("taskDate").value = "";
