@@ -157,8 +157,39 @@
 
         <textarea id="taskNotes" placeholder="Task Notes / Mentor Feedback"></textarea>
 
-        <button onclick="addTask()">Add Task</button>
+        <button id="taskSubmitBtn" onclick="addTask()">Add Task</button>
+        <button id="taskCancelBtn" onclick="cancelEdit()" style="display:none;margin-left:8px;">Cancel</button>
 
+      </div>
+
+      <div class="search-section">
+        <h3>Search Task by ID or Name</h3>
+        <div class="search-container">
+          <input type="text" id="taskSearchInput" placeholder="Enter Task ID or Task Name..." onkeyup="searchTaskByIdOrName()">
+          <button onclick="searchTaskByIdOrName()">Search</button>
+        </div>
+        <div id="searchResultsContainer" class="task-table" style="display:none;">
+          <div class="table-header">
+            <h2>Search Results</h2>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Task ID</th>
+                <th>Task</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="searchResultsList">
+            </tbody>
+          </table>
+        </div>
+        <div id="notFoundMessage" class="not-found-message" style="display:none;">
+          <p>Task not found. Please check the ID or Name and try again.</p>
+        </div>
       </div>
 
       <div class="search-box">

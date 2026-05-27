@@ -3,7 +3,7 @@ let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let notes = JSON.parse(localStorage.getItem("notes")) || [];
 let editId = null;
 const titles = {
-  dashboard: "Interactive Progress Tracker",
+  dashboard: "Progress Tracker",
   tasks: "Tasks",
   progress: "Progress Overview",
   notes: "Notes"
@@ -27,7 +27,16 @@ function showSection(section) {
   $("pageTitle").innerText = titles[section] || "OJT Tracker";
   if(section === "progress") updateProgressSection();
   if(section === "dashboard") displayDashboardTasks();
-  if(section === "tasks" && !editId) $("taskId").value = getNextTaskId();
+  if(section === "tasks") {
+    if(!editId) {
+      $("taskId").value = getNextTaskId();
+      const submit = $("taskSubmitBtn"); if(submit) submit.innerText = "Add Task";
+      const cancel = $("taskCancelBtn"); if(cancel) cancel.style.display = "none";
+    } else {
+      const submit = $("taskSubmitBtn"); if(submit) submit.innerText = "Save Task";
+      const cancel = $("taskCancelBtn"); if(cancel) cancel.style.display = "inline-block";
+    }
+  }
 }
 
 function addTask() {
@@ -110,13 +119,37 @@ function renderTasks(tableBodyId, filteredTasks = []) {
           <td><span class="status ${statusClass}">${task.taskStatus}</span></td>
           <td>${task.taskDate}</td>
           <td class="actions">
-            <button class="complete-btn" onclick="markComplete(${task.id})">Complete</button>
-            <button class="edit-btn" onclick="editTask(${task.id})">Edit</button>
-            <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
+            <div class="action-panel">
+              <button class="action-toggle" onclick="toggleActionMenu(event, ${task.id})">Action</button>
+              <div class="action-menu" id="actionMenu-${task.id}">
+                <button onclick="markComplete(${task.id}); event.stopPropagation();">Complete</button>
+                <button onclick="editTask(${task.id}); event.stopPropagation();">Edit</button>
+                <button onclick="deleteTask(${task.id}); event.stopPropagation();">Delete</button>
+              </div>
+            </div>
           </td>
         </tr>`;
     }).join("");
 }
+
+function toggleActionMenu(event, taskId) {
+  event.stopPropagation();
+  closeAllActionMenus();
+  const menu = $("actionMenu-" + taskId);
+  if(menu) {
+    menu.classList.toggle("open");
+  }
+}
+
+function closeAllActionMenus(excludeMenu) {
+  document.querySelectorAll(".action-menu.open").forEach(menu => {
+    if(menu !== excludeMenu) {
+      menu.classList.remove("open");
+    }
+  });
+}
+
+document.addEventListener("click", () => closeAllActionMenus());
 
 function displayTasks(filteredTasks = tasks) {
   renderTasks("taskList", filteredTasks);
@@ -196,7 +229,45 @@ function editTask(id) {
 
   editId = id;
   showSection("tasks");
+  const submit = $("taskSubmitBtn"); if(submit) submit.innerText = "Save Task";
+  const cancel = $("taskCancelBtn"); if(cancel) cancel.style.display = "inline-block";
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function searchTaskByIdOrName() {
+  const search = document.getElementById("taskSearchInput").value.trim();
+  const searchResultsContainer = document.getElementById("searchResultsContainer");
+  const notFoundMessage = document.getElementById("notFoundMessage");
+  const searchResultsList = document.getElementById("searchResultsList");
+
+  // Hide both containers initially
+  searchResultsContainer.style.display = "none";
+  notFoundMessage.style.display = "none";
+
+  if(search === "") {
+    return;
+  }
+
+  // Search by ID (numeric) or by name (text)
+  let filtered = [];
+  const searchAsNumber = parseInt(search, 10);
+
+  if(!isNaN(searchAsNumber)) {
+    // Search by ID
+    filtered = tasks.filter(task => task.id === searchAsNumber);
+  } else {
+    // Search by name (case-insensitive)
+    filtered = tasks.filter(task =>
+      task.taskName.toLowerCase().includes(search.toLowerCase())
+    );
+  }
+
+  if(filtered.length === 0) {
+    notFoundMessage.style.display = "block";
+  } else {
+    searchResultsContainer.style.display = "block";
+    renderTasks("searchResultsList", filtered);
+  }
 }
 
 function searchTasks() {
@@ -227,6 +298,8 @@ function clearForm() {
   document.getElementById("taskStatus").value = "Pending";
   document.getElementById("taskNotes").value = "";
   editId = null;
+  const submit = $("taskSubmitBtn"); if(submit) submit.innerText = "Add Task";
+  const cancel = $("taskCancelBtn"); if(cancel) cancel.style.display = "none";
 }
 
 function addNote() {
@@ -275,4 +348,9 @@ function saveNotes() {
 function clearNoteForm() {
   document.getElementById("noteTitle").value = "";
   document.getElementById("noteBody").value = "";
+}
+
+function cancelEdit() {
+  clearForm();
+  showSection("tasks");
 }
