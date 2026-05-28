@@ -198,6 +198,18 @@ textarea {
   margin-bottom: 25px;
 }
 
+.summary-row {
+  display: none;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  background: #ffffff;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  margin-top: 20px;
+  margin-bottom: 30px;
+}
+
 /* Table */
 
 .task-table {

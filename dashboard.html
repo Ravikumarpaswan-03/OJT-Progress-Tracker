@@ -43,6 +43,11 @@
         Notes
       </li>
 
+      <li id="navSummary" onclick="showSection('summary')">
+        <i class="fa-solid fa-chart-pie"></i>
+        Summary
+      </li>
+
     </ul>
 
   </div>
@@ -192,6 +197,21 @@
         </div>
       </div>
 
+      <div id="taskSummaryRow" class="cards summary-row">
+        <div class="card blue">
+          <h4>Task</h4>
+          <p id="summaryTaskInfo">-</p>
+        </div>
+        <div class="card green">
+          <h4>Progress</h4>
+          <p id="summaryTaskStatus">-</p>
+        </div>
+        <div class="card orange">
+          <h4>Notes</h4>
+          <p id="summaryTaskNotes">-</p>
+        </div>
+      </div>
+
       <div class="search-box">
 
         <input type="text" id="searchInput" placeholder="Search Tasks..." onkeyup="searchTasks()">
@@ -246,6 +266,48 @@
 
         </table>
 
+      </div>
+
+    </section>
+
+    <section id="summarySection" class="content-section">
+
+      <div class="cards">
+        <div class="card blue">
+          <h2 id="summaryTotalTasks">0</h2>
+          <p>Total Tasks</p>
+        </div>
+        <div class="card green">
+          <h2 id="summaryCompletedTasks">0</h2>
+          <p>Completed Tasks</p>
+        </div>
+        <div class="card orange">
+          <h2 id="summaryPendingTasks">0</h2>
+          <p>Pending Tasks</p>
+        </div>
+        <div class="card purple">
+          <h2 id="summaryNotesCount">0</h2>
+          <p>Tasks with Notes</p>
+        </div>
+      </div>
+
+      <div class="task-table">
+        <div class="table-header">
+          <h2>Summary Overview</h2>
+          <span class="subtext">Quick overview of task progress and note activity.</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Task ID</th>
+              <th>Task Name</th>
+              <th>Status</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="summaryTableBody">
+          </tbody>
+        </table>
       </div>
 
     </section>

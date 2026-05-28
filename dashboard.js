@@ -1,15 +1,20 @@
 const $ = id => document.getElementById(id);
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let editId = null;
-let noteEditTaskId = null;
 const titles = {
   dashboard: "Progress Tracker",
   tasks: "Tasks",
   progress: "Progress Overview",
-  notes: "Notes"
+  notes: "Notes",
+  summary: "Summary"
 };
 
 const getNextTaskId = () => tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+
+const getStatusCounts = (taskArray = tasks) => taskArray.reduce((acc, { taskStatus }) => {
+  acc[taskStatus === "Completed" ? "completed" : taskStatus === "Pending" ? "pending" : "inProgress"]++;
+  return acc;
+}, { completed: 0, pending: 0, inProgress: 0 });
 
 showSection("dashboard");
 displayTasks();
@@ -17,7 +22,7 @@ displayNotes();
 updateProgressSection();
 
 function showSection(section) {
-  ["dashboard", "tasks", "progress", "notes"].forEach(name => {
+  ["dashboard", "tasks", "progress", "notes", "summary"].forEach(name => {
     const el = $(name + "Section");
     const nav = $("nav" + name[0].toUpperCase() + name.slice(1));
     if(el) el.classList.toggle("active-section", name === section);
@@ -27,6 +32,7 @@ function showSection(section) {
   $("pageTitle").innerText = titles[section] || "OJT Tracker";
   if(section === "progress") updateProgressSection();
   if(section === "dashboard") displayDashboardTasks();
+  if(section === "summary") updateSummarySection();
   if(section === "tasks") {
     if(!editId) {
       $("taskId").value = getNextTaskId();
@@ -156,6 +162,28 @@ function displayTasks(filteredTasks = tasks) {
   updateSummary();
   displayDashboardTasks();
   updateProgressSection();
+  updateSummarySection();
+}
+
+function updateTaskSummaryRow(task) {
+  const summaryRow = document.getElementById("taskSummaryRow");
+  if(!summaryRow) return;
+
+  if(!task) {
+    summaryRow.style.display = "none";
+    return;
+  }
+
+  document.getElementById("summaryTaskInfo").innerText = `#${task.id} - ${task.taskName}`;
+  document.getElementById("summaryTaskStatus").innerText = task.taskStatus;
+  document.getElementById("summaryTaskNotes").innerText = task.taskNotes || "No notes available.";
+  summaryRow.style.display = "grid";
+}
+
+function clearTaskSummaryRow() {
+  const summaryRow = document.getElementById("taskSummaryRow");
+  if(!summaryRow) return;
+  summaryRow.style.display = "none";
 }
 
 function displayDashboardTasks() {
@@ -165,10 +193,7 @@ function displayDashboardTasks() {
 
 function updateSummary() {
   const total = tasks.length;
-  const counts = tasks.reduce((acc, { taskStatus }) => {
-    acc[taskStatus === "Completed" ? "completed" : taskStatus === "Pending" ? "pending" : "inProgress"]++;
-    return acc;
-  }, { completed: 0, pending: 0, inProgress: 0 });
+  const counts = getStatusCounts();
   const progress = total ? Math.round((counts.completed / total) * 100) : 0;
   $("totalTasks").innerText = total;
   $("completedTasks").innerText = counts.completed;
@@ -178,6 +203,30 @@ function updateSummary() {
   $("progressCompletedTasks").innerText = counts.completed;
   $("progressPendingTasks").innerText = counts.pending;
   $("progressInProgressTasks").innerText = counts.inProgress;
+}
+
+function updateSummarySection() {
+  const notesCount = tasks.filter(task => task.taskNotes && task.taskNotes.trim() !== "").length;
+  const counts = getStatusCounts();
+
+  $("summaryTotalTasks").innerText = tasks.length;
+  $("summaryCompletedTasks").innerText = counts.completed;
+  $("summaryPendingTasks").innerText = counts.pending;
+  $("summaryNotesCount").innerText = notesCount;
+
+  const summaryTableBody = $("summaryTableBody");
+  if(!summaryTableBody) return;
+
+  summaryTableBody.innerHTML = tasks.length === 0
+    ? `<tr><td colspan="4">No tasks available.</td></tr>`
+    : tasks.map(task => `
+      <tr>
+        <td><strong>#${task.id}</strong></td>
+        <td>${task.taskName}</td>
+        <td>${task.taskStatus}</td>
+        <td>${task.taskNotes ? task.taskNotes : "-"}</td>
+      </tr>
+    `).join("");
 }
 
 function updateProgressSection() {
@@ -243,6 +292,7 @@ function searchTaskByIdOrName() {
   // Hide both containers initially
   searchResultsContainer.style.display = "none";
   notFoundMessage.style.display = "none";
+  clearTaskSummaryRow();
 
   if(search === "") {
     return;
@@ -264,9 +314,11 @@ function searchTaskByIdOrName() {
 
   if(filtered.length === 0) {
     notFoundMessage.style.display = "block";
+    clearTaskSummaryRow();
   } else {
     searchResultsContainer.style.display = "block";
     renderTasks("searchResultsList", filtered);
+    updateTaskSummaryRow(filtered[0]);
   }
 }
 
@@ -303,10 +355,10 @@ function clearForm() {
 }
 
 function saveTaskNote() {
-  const taskIdInput = document.getElementById("noteTaskId").value.trim();
-  const noteBody = document.getElementById("noteBody").value.trim();
-
+  const taskIdInput = $("noteTaskId").value.trim();
+  const noteBody = $("noteBody").value.trim();
   const taskId = parseInt(taskIdInput, 10);
+
   if(!taskIdInput || isNaN(taskId) || taskId < 1) {
     alert("Please enter a valid Task ID.");
     return;
@@ -375,26 +427,24 @@ function editTaskNote(id) {
   const task = tasks.find(task => task.id === id);
   if(!task) return;
 
-  document.getElementById("noteTaskId").value = task.id;
-  document.getElementById("noteTaskName").value = task.taskName;
-  document.getElementById("noteBody").value = task.taskNotes;
-  noteEditTaskId = id;
+  $("noteTaskId").value = task.id;
+  $("noteTaskId").readOnly = true;
+  $("noteTaskName").value = task.taskName;
+  $("noteBody").value = task.taskNotes;
 
-  const submit = document.getElementById("noteSubmitBtn");
-  if(submit) submit.innerText = "Save Note";
-  const cancel = document.getElementById("noteCancelBtn");
-  if(cancel) cancel.style.display = "inline-block";
+  const submit = $("noteSubmitBtn"); if(submit) submit.innerText = "Save Note";
+  const cancel = $("noteCancelBtn"); if(cancel) cancel.style.display = "inline-block";
   showSection("notes");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function clearNoteForm() {
-  document.getElementById("noteTaskId").value = "";
-  document.getElementById("noteTaskName").value = "";
-  document.getElementById("noteBody").value = "";
-  noteEditTaskId = null;
-  const submit = document.getElementById("noteSubmitBtn"); if(submit) submit.innerText = "Add Note";
-  const cancel = document.getElementById("noteCancelBtn"); if(cancel) cancel.style.display = "none";
+  $("noteTaskId").value = "";
+  $("noteTaskId").readOnly = false;
+  $("noteTaskName").value = "";
+  $("noteBody").value = "";
+  const submit = $("noteSubmitBtn"); if(submit) submit.innerText = "Add Note";
+  const cancel = $("noteCancelBtn"); if(cancel) cancel.style.display = "none";
 }
 
 function cancelEdit() {
