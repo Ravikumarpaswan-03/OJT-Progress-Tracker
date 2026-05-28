@@ -1,7 +1,7 @@
 const $ = id => document.getElementById(id);
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-let notes = JSON.parse(localStorage.getItem("notes")) || [];
 let editId = null;
+let noteEditTaskId = null;
 const titles = {
   dashboard: "Progress Tracker",
   tasks: "Tasks",
@@ -302,52 +302,99 @@ function clearForm() {
   const cancel = $("taskCancelBtn"); if(cancel) cancel.style.display = "none";
 }
 
-function addNote() {
-  const noteTitle = document.getElementById("noteTitle").value.trim();
+function saveTaskNote() {
+  const taskIdInput = document.getElementById("noteTaskId").value.trim();
   const noteBody = document.getElementById("noteBody").value.trim();
-  if(noteTitle === "" || noteBody === "") {
-    alert("Please enter a note title and content.");
+
+  const taskId = parseInt(taskIdInput, 10);
+  if(!taskIdInput || isNaN(taskId) || taskId < 1) {
+    alert("Please enter a valid Task ID.");
     return;
   }
 
-  notes.push({ id: Date.now(), title: noteTitle, body: noteBody });
-  saveNotes();
+  if(noteBody === "") {
+    alert("Please enter note content.");
+    return;
+  }
+
+  const task = tasks.find(task => task.id === taskId);
+  if(!task) {
+    alert("Task not found. Please use a valid Task ID.");
+    return;
+  }
+
+  task.taskNotes = noteBody;
+  saveTasks();
   displayNotes();
+  displayTasks();
   clearNoteForm();
 }
 
 function displayNotes() {
   const noteList = document.getElementById("noteList");
   noteList.innerHTML = "";
-  if(notes.length === 0) {
-    noteList.innerHTML = `<tr><td colspan="3">No notes yet.</td></tr>`;
+  const tasksWithNotes = tasks.filter(task => task.taskNotes && task.taskNotes.trim() !== "");
+  if(tasksWithNotes.length === 0) {
+    noteList.innerHTML = `<tr><td colspan="4">No task notes yet.</td></tr>`;
     return;
   }
 
-  [...notes].reverse().forEach(note => {
+  [...tasksWithNotes].reverse().forEach(task => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${note.title}</td>
-      <td>${note.body}</td>
-      <td><button class="delete-btn" onclick="deleteNote(${note.id})">Delete</button></td>
+      <td><strong>#${task.id}</strong></td>
+      <td>${task.taskName}</td>
+      <td>${task.taskNotes}</td>
+      <td>
+        <div class="action-panel">
+          <button class="action-toggle" onclick="toggleActionMenu(event, 'note-${task.id}')">Actions</button>
+          <div class="action-menu" id="actionMenu-note-${task.id}">
+            <button onclick="editTaskNote(${task.id}); event.stopPropagation();">Edit</button>
+            <button onclick="deleteTaskNote(${task.id}); event.stopPropagation();">Delete</button>
+          </div>
+        </div>
+      </td>
     `;
     noteList.appendChild(row);
   });
 }
 
-function deleteNote(id) {
-  notes = notes.filter(note => note.id !== id);
-  saveNotes();
+function deleteTaskNote(id) {
+  tasks = tasks.map(task => {
+    if(task.id === id) {
+      return { ...task, taskNotes: "" };
+    }
+    return task;
+  });
+  saveTasks();
   displayNotes();
+  displayTasks();
 }
 
-function saveNotes() {
-  localStorage.setItem("notes", JSON.stringify(notes));
+function editTaskNote(id) {
+  const task = tasks.find(task => task.id === id);
+  if(!task) return;
+
+  document.getElementById("noteTaskId").value = task.id;
+  document.getElementById("noteTaskName").value = task.taskName;
+  document.getElementById("noteBody").value = task.taskNotes;
+  noteEditTaskId = id;
+
+  const submit = document.getElementById("noteSubmitBtn");
+  if(submit) submit.innerText = "Save Note";
+  const cancel = document.getElementById("noteCancelBtn");
+  if(cancel) cancel.style.display = "inline-block";
+  showSection("notes");
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function clearNoteForm() {
-  document.getElementById("noteTitle").value = "";
+  document.getElementById("noteTaskId").value = "";
+  document.getElementById("noteTaskName").value = "";
   document.getElementById("noteBody").value = "";
+  noteEditTaskId = null;
+  const submit = document.getElementById("noteSubmitBtn"); if(submit) submit.innerText = "Add Note";
+  const cancel = document.getElementById("noteCancelBtn"); if(cancel) cancel.style.display = "none";
 }
 
 function cancelEdit() {

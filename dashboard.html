@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Interactive OJT Progress Tracker</title>
+  <title>OJT Progress Tracker</title>
 
   <link rel="stylesheet" href="dashboard.css">
 
@@ -19,7 +19,7 @@
 
   <div class="sidebar">
 
-    <h2>OJT Tracker</h2>
+    <h2>OJT Progress Tracker</h2>
 
     <ul>
 
@@ -55,7 +55,7 @@
 
     <div class="topbar">
 
-      <h1 id="pageTitle">Interactive Progress Tracker</h1>
+      <h1 id="pageTitle">Progress Tracker</h1>
 
     </div>
 
@@ -310,17 +310,19 @@
 
       <div class="task-form">
 
-        <h2>Notes</h2>
+        <h2>Task Notes</h2>
 
         <div class="form-grid">
 
-          <input type="text" id="noteTitle" placeholder="Note Title">
+          <input type="number" id="noteTaskId" placeholder="Task ID" min="1">
+          <input type="text" id="noteTaskName" placeholder="Task Name" readonly>
 
         </div>
 
         <textarea id="noteBody" placeholder="Write your note..."></textarea>
 
-        <button onclick="addNote()">Add Note</button>
+        <button id="noteSubmitBtn" onclick="saveTaskNote()">Add Note</button>
+        <button id="noteCancelBtn" onclick="clearNoteForm()" style="display:none;margin-left:8px;">Cancel</button>
 
       </div>
 
@@ -338,7 +340,9 @@
 
             <tr>
 
-              <th>Title</th>
+              <th>Task ID</th>
+
+              <th>Task Name</th>
 
               <th>Note</th>
 
