@@ -1,4 +1,11 @@
 const $ = id => document.getElementById(id);
+const navItems = ["dashboard","tasks","progress","notes","summary"];
+const toggleActionButton = (id, text, show) => {
+  const el = $(id);
+  if(!el) return;
+  if(text) el.innerText = text;
+  if(show !== undefined) el.style.display = show ? "inline-block" : "none";
+};
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let editId = null;
 const titles = {
@@ -22,11 +29,11 @@ displayNotes();
 updateProgressSection();
 
 function showSection(section) {
-  ["dashboard", "tasks", "progress", "notes", "summary"].forEach(name => {
-    const el = $(name + "Section");
-    const nav = $("nav" + name[0].toUpperCase() + name.slice(1));
-    if(el) el.classList.toggle("active-section", name === section);
-    if(nav) nav.classList.toggle("active", name === section);
+  navItems.forEach(name => {
+    const sectionEl = $(name + "Section");
+    const navEl = $("nav" + name[0].toUpperCase() + name.slice(1));
+    if(sectionEl) sectionEl.classList.toggle("active-section", name === section);
+    if(navEl) navEl.classList.toggle("active", name === section);
   });
 
   $("pageTitle").innerText = titles[section] || "OJT Tracker";
@@ -34,14 +41,9 @@ function showSection(section) {
   if(section === "dashboard") displayDashboardTasks();
   if(section === "summary") updateSummarySection();
   if(section === "tasks") {
-    if(!editId) {
-      $("taskId").value = getNextTaskId();
-      const submit = $("taskSubmitBtn"); if(submit) submit.innerText = "Add Task";
-      const cancel = $("taskCancelBtn"); if(cancel) cancel.style.display = "none";
-    } else {
-      const submit = $("taskSubmitBtn"); if(submit) submit.innerText = "Save Task";
-      const cancel = $("taskCancelBtn"); if(cancel) cancel.style.display = "inline-block";
-    }
+    $("taskId").value = getNextTaskId();
+    toggleActionButton("taskSubmitBtn", editId ? "Save Task" : "Add Task");
+    toggleActionButton("taskCancelBtn", null, Boolean(editId));
   }
 }
 
@@ -231,17 +233,16 @@ function updateSummarySection() {
 
 function updateProgressSection() {
   const total = tasks.length;
-  const counts = tasks.reduce((acc, { taskStatus }) => {
-    acc[taskStatus === "Completed" ? "completed" : taskStatus === "Pending" ? "pending" : "inProgress"]++;
-    return acc;
-  }, { completed: 0, pending: 0, inProgress: 0 });
-  const pct = x => total ? Math.round((x / total) * 100) : 0;
-  $("completedProgressFill").style.width = `${pct(counts.completed)}%`;
-  $("inProgressFill").style.width = `${pct(counts.inProgress)}%`;
-  $("pendingProgressFill").style.width = `${pct(counts.pending)}%`;
-  $("completedProgressPercent").innerText = `${pct(counts.completed)}%`;
-  $("inProgressPercent").innerText = `${pct(counts.inProgress)}%`;
-  $("pendingProgressPercent").innerText = `${pct(counts.pending)}%`;
+  const counts = getStatusCounts();
+  const pct = value => total ? Math.round((value / total) * 100) : 0;
+  [
+    ["completed", "completedProgressFill", "completedProgressPercent"],
+    ["inProgress", "inProgressFill", "inProgressPercent"],
+    ["pending", "pendingProgressFill", "pendingProgressPercent"]
+  ].forEach(([key, barId, percentId]) => {
+    if($(barId)) $(barId).style.width = `${pct(counts[key])}%`;
+    if($(percentId)) $(percentId).innerText = `${pct(counts[key])}%`;
+  });
 }
 
 function saveTasks() {
@@ -269,17 +270,17 @@ function editTask(id) {
   const task = tasks.find(task => task.id === id);
   if(!task) return;
 
-  document.getElementById("taskId").value = task.id;
-  document.getElementById("taskName").value = task.taskName;
-  document.getElementById("taskCategory").value = task.taskCategory;
-  document.getElementById("taskDate").value = task.taskDate;
-  document.getElementById("taskStatus").value = task.taskStatus;
-  document.getElementById("taskNotes").value = task.taskNotes;
+  $("taskId").value = task.id;
+  $("taskName").value = task.taskName;
+  $("taskCategory").value = task.taskCategory;
+  $("taskDate").value = task.taskDate;
+  $("taskStatus").value = task.taskStatus;
+  $("taskNotes").value = task.taskNotes;
 
   editId = id;
   showSection("tasks");
-  const submit = $("taskSubmitBtn"); if(submit) submit.innerText = "Save Task";
-  const cancel = $("taskCancelBtn"); if(cancel) cancel.style.display = "inline-block";
+  toggleActionButton("taskSubmitBtn", "Save Task");
+  toggleActionButton("taskCancelBtn", null, true);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -343,15 +344,12 @@ function filterTasks() {
 }
 
 function clearForm() {
-  document.getElementById("taskId").value = getNextTaskId();
-  document.getElementById("taskName").value = "";
-  document.getElementById("taskCategory").value = "";
-  document.getElementById("taskDate").value = "";
-  document.getElementById("taskStatus").value = "Pending";
-  document.getElementById("taskNotes").value = "";
+  $("taskId").value = getNextTaskId();
+  ["taskName","taskCategory","taskDate","taskNotes"].forEach(id => $(id).value = "");
+  $("taskStatus").value = "Pending";
   editId = null;
-  const submit = $("taskSubmitBtn"); if(submit) submit.innerText = "Add Task";
-  const cancel = $("taskCancelBtn"); if(cancel) cancel.style.display = "none";
+  toggleActionButton("taskSubmitBtn", "Add Task");
+  toggleActionButton("taskCancelBtn", null, false);
 }
 
 function saveTaskNote() {
