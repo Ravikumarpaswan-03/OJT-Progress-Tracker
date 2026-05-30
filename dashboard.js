@@ -23,6 +23,8 @@ const getStatusCounts = (taskArray = tasks) => taskArray.reduce((acc, { taskStat
   return acc;
 }, { completed: 0, pending: 0, inProgress: 0 });
 
+const sortTasksById = taskArray => [...taskArray].sort((a, b) => a.id - b.id);
+
 showSection("dashboard");
 displayTasks();
 displayNotes();
@@ -111,9 +113,10 @@ function addTask() {
 
 function renderTasks(tableBodyId, filteredTasks = []) {
   const taskList = $(tableBodyId);
-  taskList.innerHTML = filteredTasks.length === 0
-    ? `<tr><td colspan="5">No tasks found.</td></tr>`
-    : [...filteredTasks].reverse().map(task => {
+  const orderedTasks = sortTasksById(filteredTasks);
+  taskList.innerHTML = orderedTasks.length === 0
+    ? `<tr><td colspan="6">No tasks found.</td></tr>`
+    : orderedTasks.map(task => {
       const statusClass = task.taskStatus === "Completed"
         ? "completed"
         : task.taskStatus === "Pending"
@@ -189,8 +192,8 @@ function clearTaskSummaryRow() {
 }
 
 function displayDashboardTasks() {
-  const recentTasks = tasks.slice(-5);
-  renderTasks("dashboardTaskList", recentTasks);
+  const orderedTasks = sortTasksById(tasks);
+  renderTasks("dashboardTaskList", orderedTasks);
 }
 
 function updateSummary() {
@@ -221,7 +224,7 @@ function updateSummarySection() {
 
   summaryTableBody.innerHTML = tasks.length === 0
     ? `<tr><td colspan="4">No tasks available.</td></tr>`
-    : tasks.map(task => `
+    : sortTasksById(tasks).map(task => `
       <tr>
         <td><strong>#${task.id}</strong></td>
         <td>${task.taskName}</td>
@@ -383,13 +386,13 @@ function saveTaskNote() {
 function displayNotes() {
   const noteList = document.getElementById("noteList");
   noteList.innerHTML = "";
-  const tasksWithNotes = tasks.filter(task => task.taskNotes && task.taskNotes.trim() !== "");
+  const tasksWithNotes = sortTasksById(tasks.filter(task => task.taskNotes && task.taskNotes.trim() !== ""));
   if(tasksWithNotes.length === 0) {
     noteList.innerHTML = `<tr><td colspan="4">No task notes yet.</td></tr>`;
     return;
   }
 
-  [...tasksWithNotes].reverse().forEach(task => {
+  tasksWithNotes.forEach(task => {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><strong>#${task.id}</strong></td>
